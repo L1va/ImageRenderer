@@ -22,6 +22,8 @@ public class CustomView extends View {
     private int brightness = 50;
     private int blur = 0;
     private int extractRed = 0;
+    private int width;
+    private int height;
 
     private RenderScript renderScript;
     private ScriptIntrinsicColorMatrix scriptIntrinsicColorMatrix;
@@ -47,19 +49,43 @@ public class CustomView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        rect.right = w;
-        rect.bottom = h;
+        width = w;
+        height = h;
+        updateRect();
     }
 
     private void invalidateBitmap() {
         invalidate();
     }
 
+    private void updateRect() {
+
+        if (bitmap == null) {
+            return;
+        }
+        float ws = width / ((float) bitmap.getWidth());
+        float hs = height / ((float) bitmap.getHeight());
+
+        if (ws > hs) {
+            int dx = (int) (width - hs * bitmap.getWidth()) / 2;
+            rect.left = dx;
+            rect.right = width - dx;
+            rect.top = 0;
+            rect.bottom = height;
+        } else {
+            int dy = (int) (height - ws * bitmap.getHeight()) / 2;
+            rect.left = 0;
+            rect.right = width;
+            rect.top = dy;
+            rect.bottom = height - dy;
+        }
+    }
+
 
     public void initBitmap(Bitmap bitmap) {
         this.initialBitmap = bitmap.copy(bitmap.getConfig(), true);
-        ;
         this.bitmap = bitmap;
+        updateRect();
         brightness = 50;
         blur = 0;
         extractRed = 0;
