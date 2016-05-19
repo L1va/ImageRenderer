@@ -1,9 +1,12 @@
 package com.example.l1va.imagerenderer;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
+import android.location.Location;
 import android.os.AsyncTask;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
@@ -29,12 +32,30 @@ public class CustomView extends View {
     private ScriptIntrinsicColorMatrix scriptIntrinsicColorMatrix;
     private ScriptIntrinsicBlur scriptIntrinsicBlur;
 
+    private Paint textPaint;
+    private String textLocation;
+    private int textHeight;
+
     public CustomView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
         renderScript = RenderScript.create(context);
         scriptIntrinsicBlur = ScriptIntrinsicBlur.create(renderScript, Element.U8_4(renderScript));
         scriptIntrinsicColorMatrix = ScriptIntrinsicColorMatrix.create(renderScript, Element.U8_4(renderScript));
+
+        textPaint = new Paint();
+        textPaint.setTextAlign(Paint.Align.RIGHT);
+        TypedArray typedArray = getContext().obtainStyledAttributes(
+                android.R.style.TextAppearance_Small,
+                new int[]{android.R.attr.textSize}
+        );
+        textPaint.setTextSize(typedArray.getDimensionPixelSize(0, 42));
+        typedArray.recycle();
+
+        String text = " -.0123456789:EILNadefginotuy";
+        Rect bounds = new Rect();
+        textPaint.getTextBounds(text, 0, text.length(), bounds);
+        textHeight = bounds.height();
     }
 
     @Override
@@ -44,21 +65,33 @@ public class CustomView extends View {
         if (bitmap != null) {
             canvas.drawBitmap(bitmap, null, rect, null);
         }
+        if (textLocation != null) {
+            canvas.drawText(textLocation, rect.right, rect.bottom + textHeight - 10, textPaint);
+        }
     }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         width = w;
-        height = h;
+        height = h - textHeight;
         updateRect();
     }
 
-    private void invalidateBitmap() {
+    public void setLocation(Location location) {
+        textLocation = "latitude: " + location.getLatitude() + ", longitude: " + location.getLongitude();
+        invalidateView();
+    }
+
+    private void invalidateView() {
         invalidate();
     }
 
     private void updateRect() {
+        rect.left = 0;
+        rect.right = width;
+        rect.top = 0;
+        rect.bottom = height;
 
         if (bitmap == null) {
             return;
@@ -70,12 +103,8 @@ public class CustomView extends View {
             int dx = (int) (width - hs * bitmap.getWidth()) / 2;
             rect.left = dx;
             rect.right = width - dx;
-            rect.top = 0;
-            rect.bottom = height;
         } else {
             int dy = (int) (height - ws * bitmap.getHeight()) / 2;
-            rect.left = 0;
-            rect.right = width;
             rect.top = dy;
             rect.bottom = height - dy;
         }
@@ -89,7 +118,7 @@ public class CustomView extends View {
         brightness = 50;
         blur = 0;
         extractRed = 0;
-        invalidateBitmap();
+        invalidateView();
     }
 
     public void saveStep() {
@@ -156,7 +185,7 @@ public class CustomView extends View {
         }
 
         protected void onPostExecute(Void result) {
-            invalidateBitmap();
+            invalidateView();
         }
     }
 
@@ -177,7 +206,7 @@ public class CustomView extends View {
         }
 
         protected void onPostExecute(Void result) {
-            invalidateBitmap();
+            invalidateView();
         }
     }
 
@@ -198,7 +227,7 @@ public class CustomView extends View {
         }
 
         protected void onPostExecute(Void result) {
-            invalidateBitmap();
+            invalidateView();
         }
     }
 }

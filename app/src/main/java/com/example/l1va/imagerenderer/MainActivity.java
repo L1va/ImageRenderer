@@ -1,10 +1,18 @@
 package com.example.l1va.imagerenderer;
 
+import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -18,6 +26,7 @@ import java.io.FileNotFoundException;
 public class MainActivity extends AppCompatActivity {
 
     CustomView customView;
+    private final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,8 +34,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         Intent intent = getIntent();
+        customView = (CustomView) findViewById(R.id.customView);
         if (Intent.ACTION_VIEW.equals(intent.getAction())) {
             loadImage(intent.getData());
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        } else {
+            requestLocationUpdate();
         }
     }
 
@@ -66,7 +81,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        customView = (CustomView) findViewById(R.id.customView);
         customView.initBitmap(bitmap);
 
         final RadioGroup radioGroup = (RadioGroup) findViewById(R.id.radioGroupFilter);
@@ -119,5 +133,42 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            switch (requestCode) {
+                case PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION:
+                    requestLocationUpdate();
+                    break;
+            }
+        }
+    }
+
+    @SuppressWarnings("MissingPermission")
+    private void requestLocationUpdate() {
+        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+        LocationListener locationListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                customView.setLocation(location);
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+            }
+
+            @Override
+            public void onProviderEnabled(String provider) {
+            }
+
+            @Override
+            public void onProviderDisabled(String provider) {
+            }
+        };
+        locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, locationListener, null);
+        locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, locationListener, null);
     }
 }
