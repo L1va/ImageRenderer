@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">ImageRenderer</string>
+
+    <string name="brightness">Brightness</string>
+    <string name="blur">Blur</string>
+    <string name="extract_red">Extract Red</string>
+
+    <string name="open_image">Open</string>
+
+</resources>
