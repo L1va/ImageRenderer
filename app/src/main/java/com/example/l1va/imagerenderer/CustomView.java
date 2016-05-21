@@ -6,7 +6,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.location.Location;
 import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.renderscript.Allocation;
@@ -79,8 +78,8 @@ public class CustomView extends View {
         updateRect();
     }
 
-    public void setLocation(Location location) {
-        textLocation = "latitude: " + location.getLatitude() + ", longitude: " + location.getLongitude();
+    public void setLatLong(float lat, float lon) {
+        textLocation = "latitude: " + lat + ", longitude: " + lon;
         invalidateView();
     }
 
@@ -127,6 +126,7 @@ public class CustomView extends View {
         brightness = 50;
         blur = 0;
         extractRed = 0;
+        textLocation = null;
         invalidateView();
     }
 

@@ -1,16 +1,15 @@
 package com.example.l1va.imagerenderer;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -23,11 +22,11 @@ import android.widget.RadioGroup;
 import android.widget.SeekBar;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
     CustomView customView;
-    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private static final int PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 2;
 
     @Override
@@ -39,11 +38,6 @@ public class MainActivity extends AppCompatActivity {
         customView = (CustomView) findViewById(R.id.customView);
         if (Intent.ACTION_VIEW.equals(intent.getAction())) {
             loadImage(intent.getData());
-        }
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
-        } else {
-            requestLocationUpdate();
         }
     }
 
@@ -97,6 +91,17 @@ public class MainActivity extends AppCompatActivity {
         }
 
         customView.initBitmap(bitmap);
+
+        try {
+            ExifInterface exif = new ExifInterface(getRealPathFromURI(imageUri));
+            float[] latLong = new float[2];
+            boolean hasLatLong = exif.getLatLong(latLong);
+            if (hasLatLong) {
+                customView.setLatLong(latLong[0], latLong[1]);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         final RadioGroup radioGroup = (RadioGroup) findViewById(R.id.radioGroupFilter);
         final SeekBar seekBar = (SeekBar) findViewById(R.id.seekBar);
@@ -154,9 +159,6 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
         if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             switch (requestCode) {
-                case PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION:
-                    requestLocationUpdate();
-                    break;
                 case PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE:
                     customView.saveToMedia();
                     break;
@@ -164,29 +166,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @SuppressWarnings("MissingPermission")
-    private void requestLocationUpdate() {
-        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
-        LocationListener locationListener = new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                customView.setLocation(location);
+    public String getRealPathFromURI(Uri contentUri) {
+        Cursor cursor = null;
+        try {
+            String[] proj = {MediaStore.Images.Media.DATA};
+            cursor = getContentResolver().query(contentUri, proj, null, null, null);
+            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            return cursor.getString(column_index);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
             }
-
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-            }
-
-            @Override
-            public void onProviderEnabled(String provider) {
-            }
-
-            @Override
-            public void onProviderDisabled(String provider) {
-            }
-        };
-        locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, locationListener, null);
-        locationManager.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, locationListener, null);
+        }
     }
 }
