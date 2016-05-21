@@ -13,6 +13,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -26,7 +27,8 @@ import java.io.FileNotFoundException;
 public class MainActivity extends AppCompatActivity {
 
     CustomView customView;
-    private final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
+    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
+    private static final int PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,12 +55,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.save_image).setEnabled(!customView.isEmpty());
+        return true;
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.open_image:
                 Intent requestFileIntent = new Intent(Intent.ACTION_PICK);
                 requestFileIntent.setType("image/*");
                 startActivityForResult(requestFileIntent, 0);
+                return true;
+            case R.id.save_image:
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE);
+                } else {
+                    customView.saveToMedia();
+                }
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -141,6 +156,9 @@ public class MainActivity extends AppCompatActivity {
             switch (requestCode) {
                 case PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION:
                     requestLocationUpdate();
+                    break;
+                case PERMISSIONS_REQUEST_WRITE_EXTERNAL_STORAGE:
+                    customView.saveToMedia();
                     break;
             }
         }

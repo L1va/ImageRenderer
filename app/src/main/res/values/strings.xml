@@ -6,5 +6,6 @@
     <string name="extract_red">Extract Red</string>
 
     <string name="open_image">Open</string>
+    <string name="save_image">Save</string>
 
 </resources>

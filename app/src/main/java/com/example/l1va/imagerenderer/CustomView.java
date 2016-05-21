@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.location.Location;
 import android.os.AsyncTask;
+import android.provider.MediaStore;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.Matrix3f;
@@ -81,6 +82,14 @@ public class CustomView extends View {
     public void setLocation(Location location) {
         textLocation = "latitude: " + location.getLatitude() + ", longitude: " + location.getLongitude();
         invalidateView();
+    }
+
+    public boolean isEmpty() {
+        return bitmap == null;
+    }
+
+    public void saveToMedia() {
+        MediaStore.Images.Media.insertImage(getContext().getContentResolver(), bitmap, null, null);
     }
 
     private void invalidateView() {
